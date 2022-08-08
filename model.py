@@ -20,7 +20,7 @@ class NAIPResNet50(resnet.ResNet):
             bias=False,
         )
 
-        self.feature_extractor = resnet.resnet50(pretrained=True)       # "pretrained": use weights pre-trained on ImageNet
+        #self.feature_extractor = resnet.resnet50(pretrained=True)       # "pretrained": use weights pre-trained on ImageNet
         # replace the very last layer from the original, 1000-class output
         # ImageNet to a new one that outputs num_classes
         #last_layer = self.feature_extractor.fc                          # tip: print(self.feature_extractor) to get info on how model is set up

@@ -10,44 +10,58 @@ import os
 from glob import glob
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+import argparse
+#### to do
+### make input/output from config file on command line
 
-def replace_other(row):
-    if row["dom_overstory"] == "other":
-        return row["overstory_other"]
+#cfg = yaml.safe_load(open("configs/data_config.yaml", "r"))
+#image_glob = cfg["image_glob"]
+#transectsf = cfg["transects"]
+#drawsf = cfg["draw_polygons"]
 
-vf = "data/vectors/draw_polygons.geojson"
-field_data_file = "data/vectors/WD_Field_Data_20220803.geojson"
-image_glob = "data/images/*oid*.tif"
+def make_partition_table(drawsf, transectsf, image_glob):
+    draws = gpd.read_file(drawsf)
+    transects = gpd.read_file(transectsf)#[["draw", "dom_overstory", "overstory_other"]]
+    mulligans = transects["notes"].str.contains("Mulligan")
+    transects = transects[np.logical_not(mulligans)]
+    transects = transects[np.logical_not(transects["point_1_other"].str.contains("/a"))]
+    transects = transects[np.logical_not(transects["dom_overstory"].str.contains("/A"))]
+    transects = transects[~transects["draw"].isna()]
+    transects["dom_overstory"] = np.where(transects["dom_overstory"] == "other", transects["overstory_other"], transects["dom_overstory"])
+    transects["dom_overstory"] = transects["dom_overstory"].replace('Pinus ponderosa var. scopulorum', "Pinus ponderosa")
 
-draws = gpd.read_file(vf)
-transects = gpd.read_file(field_data_file)#[["draw", "dom_overstory", "overstory_other"]]
-mulligans = transects["notes"].str.contains("Mulligan")
-transects = transects[np.logical_not(mulligans)]
-transects = transects[np.logical_not(transects["point_1_other"].str.contains("/a"))]
-transects = transects[np.logical_not(transects["dom_overstory"].str.contains("/A"))]
-transects = transects[~transects["draw"].isna()]
-transects["dom_overstory"] = np.where(transects["dom_overstory"] == "other", transects["overstory_other"], transects["dom_overstory"])
-transects["dom_overstory"] = transects["dom_overstory"].replace('Pinus ponderosa var. scopulorum', "Pinus ponderosa")
+    transects = transects[["draw", "dom_overstory"]]
+    transects = transects[["draw", "dom_overstory"]].dropna()
 
-transects = transects[["draw", "dom_overstory"]]
-transects = transects[["draw", "dom_overstory"]].dropna()
+    transects["draw"] = transects["draw"].astype(int)
+    image_files = glob(image_glob)
 
-transects["draw"] = transects["draw"].astype(int)
-image_files = glob(image_glob)
+    object_ids = pd.DataFrame([(f, int(f.split("oid")[1][:-4]), int(f.split("_")[-2]), int(f.split("_")[5][0:4])) for (i,f) in enumerate(image_files)])
+    object_ids.columns = ["file_path", "oid", "cid", "date"]
+    sampling_table = pd.merge(draws, object_ids, how = "right", left_on = "OBJECTID", right_on = "oid")[["file_path", "oid", "cid", "k", "date"]]
+    sampling_table = pd.merge(sampling_table, transects, how = "left", left_on = "oid", right_on = "draw")
 
-object_ids = pd.DataFrame([(f, int(f.split("oid")[1][:-4]), int(f.split("_")[-2])) for (i,f) in enumerate(image_files)])
-object_ids.columns = ["file_path", "oid", "cid"]
-sampling_table = pd.merge(draws, object_ids, how = "right", left_on = "OBJECTID", right_on = "oid")[["file_path", "oid", "cid", "k"]]
-sampling_table = pd.merge(sampling_table, transects, how = "left", left_on = "oid", right_on = "draw")
-
-data = sampling_table[sampling_table["dom_overstory"].notnull()]
-
-
-
-
-
-
+    data = sampling_table[sampling_table["dom_overstory"].notnull()]
 
 
+    for_splitting = data[["oid", "k", "date"]].drop_duplicates()
+    n_draws = for_splitting.shape[0]
+    for_splitting['group'] = for_splitting.groupby(['k', 'date'], sort=False).ngroup() + 1
+    for_splitting = for_splitting[for_splitting["group"] != 1]
+    for_splitting = for_splitting[for_splitting["group"] != 6]
+    for_splitting = for_splitting[for_splitting["group"] != 7]
+    train, test = train_test_split(for_splitting, test_size=0.6, random_state=47, stratify=for_splitting[['group']])
+    train["split"] = "train"
+    #test = test[test["group"] != 5]
+    
+    test, val = train_test_split(test, test_size = 0.5, random_state=331, stratify=test["group"])
+    test["split"] = "test"
+    val["split"] = "val"
+    for_splitting = pd.concat([train,test,val], axis = 0)
+    final_dataset = pd.merge(for_splitting, data, how = "right").dropna()
+    return final_dataset
 
 

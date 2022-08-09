@@ -14,15 +14,16 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 import argparse
+import yaml
 #### to do
 ### make input/output from config file on command line
 
-#cfg = yaml.safe_load(open("configs/data_config.yaml", "r"))
-#image_glob = cfg["image_glob"]
-#transectsf = cfg["transects"]
-#drawsf = cfg["draw_polygons"]
+cfg = yaml.safe_load(open("configs/data_config.yaml", "r"))
+image_glob = cfg["image_glob"]
+transectsf = cfg["transects"]
+drawsf = cfg["draw_polygons"]
 
-def make_partition_table(drawsf, transectsf, image_glob):
+def make_partition_table(drawsf, transectsf, image_glob, pred_col):
     draws = gpd.read_file(drawsf)
     transects = gpd.read_file(transectsf)#[["draw", "dom_overstory", "overstory_other"]]
     mulligans = transects["notes"].str.contains("Mulligan")
@@ -33,8 +34,8 @@ def make_partition_table(drawsf, transectsf, image_glob):
     transects["dom_overstory"] = np.where(transects["dom_overstory"] == "other", transects["overstory_other"], transects["dom_overstory"])
     transects["dom_overstory"] = transects["dom_overstory"].replace('Pinus ponderosa var. scopulorum', "Pinus ponderosa")
 
-    transects = transects[["draw", "dom_overstory"]]
-    transects = transects[["draw", "dom_overstory"]].dropna()
+    transects = transects[["draw", pred_col]]
+    transects = transects[["draw", pred_col]].dropna()
 
     transects["draw"] = transects["draw"].astype(int)
     image_files = glob(image_glob)
@@ -44,7 +45,7 @@ def make_partition_table(drawsf, transectsf, image_glob):
     sampling_table = pd.merge(draws, object_ids, how = "right", left_on = "OBJECTID", right_on = "oid")[["file_path", "oid", "cid", "k", "date"]]
     sampling_table = pd.merge(sampling_table, transects, how = "left", left_on = "oid", right_on = "draw")
 
-    data = sampling_table[sampling_table["dom_overstory"].notnull()]
+    data = sampling_table[sampling_table[pred_col].notnull()]
 
 
     for_splitting = data[["oid", "k", "date"]].drop_duplicates()

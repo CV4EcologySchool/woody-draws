@@ -25,12 +25,12 @@ class WDDataSet(Dataset):
         self.draw_polygons = cfg["draw_polygons"]
         self.transects = cfg["transects"]
         self.image_glob = cfg["image_glob"]
+        self.pred_col = cfg["pred_col"] 
         
-        
-        self.global_table = make_partition_table(self.draw_polygons, self.transects, self.image_glob)
+        self.global_table = make_partition_table(self.draw_polygons, self.transects, self.image_glob, self.pred_col)
         self.data_table = self.global_table[self.global_table["split"] == self.split]
         self.images = self.data_table["file_path"]
-        self.labels = self.data_table["dom_overstory"]
+        self.labels = self.data_table[self.pred_col]
         self.le = LabelEncoder().fit(self.labels)
         self.labels = self.le.transform(self.labels)
         self.data = [(i,l) for i, l in zip(self.images, self.labels)]
@@ -49,7 +49,7 @@ class WDDataSet(Dataset):
         img_tensor = self.transform(ds_arr)
         return img_tensor, label
 
-    def plot_split(self, x = "k", hue = "dom_overstory", to_file = ""):
+    def plot_split(self, x = "k", hue = "", to_file = ""):
         plt.clf()
         sns.countplot(data=self.data_table, x=x, hue= hue)
         plt.gca().set_xlabel("Sampling Stratum")        

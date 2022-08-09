@@ -49,16 +49,39 @@ class WDDataSet(Dataset):
         img_tensor = self.transform(ds_arr)
         return img_tensor, label
 
-    def plot_split(self, x = "k", hue = "", to_file = ""):
+    def plot_split(self, x = "", to_file = ""):
         plt.clf()
-        sns.countplot(data=self.data_table, x=x, hue= hue)
-        plt.gca().set_xlabel("Sampling Stratum")        
+        #sns.countplot(data=self.data_table, x=x, hue= hue) 
+        fig, ax = plt.subplots(1,3, figsize=(14,8))
+        unique = self.global_table[x].unique()
+        palette = dict(zip(unique, sns.color_palette(n_colors=len(unique))))
+
+        y_train = self.global_table[self.global_table.split == "train"]
+        y_test = self.global_table[self.global_table.split == "test"]
+        y_val = self.global_table[self.global_table.split == "val"]
+        for idx, group in enumerate([('Train', y_train), ('Test', y_test), ("Val", y_val)]):
+            data = group[1][x].value_counts()
+            sns.barplot(ax=ax[idx], x=data.index, y=data.values, palette=palette)
+            ax[idx].set_title(f'{group[0]} Label Count')
+            ax[idx].set_xlabel(f'{group[0]} Labels')
+            ax[idx].set_ylabel('Label Count')
+            ax[idx].tick_params(labelrotation=90)
         if len(to_file) > 1:
+            plt.tight_layout()
             plt.savefig(to_file)
 
 if __name__ == "__main__":
-    cfg = yaml.safe_load(open("configs/data_config.yaml", "r"))
-    dataset = WDDataSet(cfg, split = "train")
-    dataset.plot_split(to_file = "figs/train_strata_split.png")
-    dataset = WDDataSet(cfg, split = "test")
-    dataset.plot_split(to_file = "figs/test_strata_split.png")
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config")
+    args = parser.parse_args()
+    cfg = yaml.safe_load(open(args.config, "r"))
+    train = WDDataSet(cfg, split = "train")
+    train.plot_split(x = cfg["pred_col"], to_file = "figs/{}_train_strata_split.png".format(cfg["experiment_name"]))
+    
+
+
+
+
+
+

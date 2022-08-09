@@ -40,9 +40,6 @@ def load_model(cfg):
         Creates a model instance and loads the latest model state weights.
     '''
     model_instance = NAIPResNet50(Bottleneck, [3, 4, 6, 3], cfg['num_classes'], cfg["n_channels"])         # create an object instance of our CustomResNet18 class
-    #weight = model_instance.conv1.weight.clone()
-    #model_instance.conv1.weight[:, :3] = weight
-    #model_instance.conv1.weight[:, 3] = model_instance.conv1.weight[:, 0]
 
     # load latest model state
     model_states = glob.glob('model_states/*.pt')
@@ -67,16 +64,17 @@ def load_model(cfg):
 
 def save_model(cfg, epoch, model, stats):
     # make sure save directory exists; create if not
-    os.makedirs('model_states', exist_ok=True)
+    experiment_name = cfg["experiment_name"]
+    
+    os.makedirs(f'model_states/{experiment_name}', exist_ok=True)
 
     # get model parameters and add to stats...
     stats['model'] = model.state_dict()
-
     # ...and save
-    torch.save(stats, open(f'model_states/{epoch}.pt', 'wb'))
+    torch.save(stats, open(f'model_states/{experiment_name}/{epoch}.pt', 'wb'))
     
     # also save config file if not present
-    cfpath = 'model_states/config.yaml'
+    cfpath = f'model_states/{experiment_name}/config.yaml'
     if not os.path.exists(cfpath):
         with open(cfpath, 'w') as f:
             yaml.dump(cfg, f)

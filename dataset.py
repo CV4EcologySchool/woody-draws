@@ -27,7 +27,14 @@ class WDDataSet(Dataset):
         self.image_glob = cfg["image_glob"]
         self.pred_col = cfg["pred_col"] 
         
-        self.global_table = make_partition_table(self.draw_polygons, self.transects, self.image_glob, self.pred_col)
+        ### Check to see if we are using all the classes, or just the top-n most frequent classes
+        try:
+            self.global_table = make_partition_table(self.draw_polygons, self.transects, self.image_glob, self.pred_col)
+            self.target_species = self.global_table[self.pred_col].value_counts()[:cfg["keep_top"]].index.tolist()
+            self.global_table = self.global_table[self.global_table[self.pred_col].isin(self.target_species)]
+        except KeyError:
+            self.global_table = make_partition_table(self.draw_polygons, self.transects, self.image_glob, self.pred_col)
+        
         self.data_table = self.global_table[self.global_table["split"] == self.split]
         self.images = self.data_table["file_path"]
         self.labels = self.data_table[self.pred_col]

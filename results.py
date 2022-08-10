@@ -1,8 +1,9 @@
 import yaml
 from train import create_dataloader, load_model
-
+import torch
+import matplotlib.pyplot as plt
 # load config
-config = "configs/data_config.yaml"
+config = "configs/draw_type_test.yaml"
 print(f'Using config "{config}"')
 cfg = yaml.safe_load(open(config, 'r'))
 
@@ -15,19 +16,21 @@ model = load_model(cfg)
 train_loss = []
 val_loss = []
 for i in range(0, cfg["num_epochs"]):
-    epoch = torch.load("model_states/{}.pt".format(i+1))
+    epoch = torch.load("model_states/{}/{}.pt".format(cfg["experiment_name"], i+1))
     train_loss.append(epoch["loss_train"])
     val_loss.append(epoch["loss_val"])
 
 epochs = [i for i in range(0, cfg["num_epochs"])]
-plt.plot(epochs, train_loss)
-plt.savefig('figs/losses.png')
+plt.clf()
+plt.plot(epochs, train_loss, label = "train loss")
+plt.plot(epochs, val_loss, label = "validation loss")
+plt.savefig('figs/{}_losses.png'.format(cfg["experiment_name"]))
 
 
 from sklearn.metrics import confusion_matrix
 import seaborn as sn
 import pandas as pd
-
+import numpy as np
 y_pred = []
 y_true = []
 

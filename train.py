@@ -109,7 +109,10 @@ def train(cfg, dataLoader, model, optimizer):
     model.train()
 
     # loss function
-    criterion = nn.CrossEntropyLoss()
+    if cfg["loss"] == "cross_entropy":
+        criterion = nn.CrossEntropyLoss()
+    elif cfg["loss"] == "kl_divergence":
+        criterion = nn.KLDivLoss()
 
     # running averages
     loss_total, oa_total = 0.0, 0.0                         # for now, we just log the loss and overall accuracy (OA)

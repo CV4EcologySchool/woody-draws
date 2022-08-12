@@ -3,7 +3,7 @@ from train import create_dataloader, load_model
 import torch
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
-import seaborn as sn
+import seaborn as sns
 import pandas as pd
 import numpy as np
 import os

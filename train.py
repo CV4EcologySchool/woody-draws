@@ -24,7 +24,6 @@ def create_dataloader(cfg, split='train'):
         PyTorch DataLoader object.
     '''
     dataset_instance = WDDataSet(cfg, split)        # create an object instance of our CTDataset class
-
     dataLoader = DataLoader(
             dataset=dataset_instance,
             batch_size=cfg['batch_size'],
@@ -42,15 +41,16 @@ def load_model(cfg):
     model_instance = NAIPResNet50(Bottleneck, [3, 4, 6, 3], cfg['num_classes'], cfg["n_channels"])         # create an object instance of our CustomResNet18 class
 
     # load latest model state
-    model_states = glob.glob('model_states/*.pt')
+    model_states = glob.glob('model_states/{}/*.pt'.format(cfg["experiment_name"]))
     if len(model_states):
         # at least one save state found; get latest
-        model_epochs = [int(m.replace('model_states/','').replace('.pt','')) for m in model_states]
+        model_epochs = [int(m.replace('model_states/{}/'.format(cfg["experiment_name"]),'').replace('.pt','')) for m in model_states]
         start_epoch = max(model_epochs)
 
         # load state dict and apply weights to model
         print(f'Resuming from epoch {start_epoch}')
-        state = torch.load(open(f'model_states/{start_epoch}.pt', 'rb'), map_location='cpu')
+        experiment_name = cfg["experiment_name"]
+        state = torch.load(open(f'model_states/{experiment_name}/{start_epoch}.pt', 'rb'), map_location='cpu')
         model_instance.load_state_dict(state['model'])
 
     else:
@@ -153,7 +153,7 @@ def train(cfg, dataLoader, model, optimizer):
             )
         )
         progressBar.update(1)
-    
+        del loss    
     # end of epoch; finalize
     progressBar.close()
     loss_total /= len(dataLoader)           # shorthand notation for: loss_total = loss_total / len(dataLoader)

@@ -1,7 +1,8 @@
 import os
 import json
 from torch.utils.data import Dataset
-from torchvision.transforms import Compose, Resize, ToTensor
+from torchvision.transforms import Compose, Resize, ToTensor, RandomHorizontalFlip
+from torchvision.transforms import RandomVerticalFlip
 from PIL import Image
 from make_partition_table import make_partition_table
 import yaml
@@ -11,17 +12,28 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import torch
 from sklearn.preprocessing import LabelEncoder
-
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 plt.rcParams['figure.figsize'] = [15, 7]
 plt.rcParams['figure.dpi'] = 100
+#c = "configs/pipeline_test.yaml"
+#cfg = yaml.safe_load(open(c, "r"))
 
 class WDDataSet(Dataset):
 
     def __init__(self, cfg, split = "train"):
         self.split = split
-        self.transform = Compose([              # Transforms. Here's where we could add data augmentation (see Björn's lecture on August 11).
-            ToTensor()                          # ...and convert them to torch.Tensor.
-        ])        
+        if split == "train":
+            self.transform = A.Compose([
+                A.ToFloat(max_value = 255.0),
+                A.HorizontalFlip(p=cfg["horizontal_flip_p"]),
+                A.VerticalFlip(p=cfg["vertical_flip_p"]),
+                ToTensorV2()])
+        else:
+            self.transform = A.Compose([              # Transforms. Here's where we could add data augmentation (see Björn's lecture on August 11).
+                A.ToFloat(max_value = 255.0),
+                ToTensorV2(),
+            ])        
         self.draw_polygons = cfg["draw_polygons"]
         self.transects = cfg["transects"]
         self.image_glob = cfg["image_glob"]
@@ -52,8 +64,11 @@ class WDDataSet(Dataset):
     def __getitem__(self, idx):
         image_name, label = self.data[idx]
         ds = gdal.Open(image_name)
-        ds_arr = ds.ReadAsArray().astype(np.uint8).reshape(self.img_width, self.img_height, self.n_channels)
-        img_tensor = self.transform(ds_arr)
+        ds_arr = ds.ReadAsArray()
+        ds_arr = ds_arr.astype(np.uint8).reshape(self.img_width, self.img_height, self.n_channels)
+        img_tensor = self.transform(force_apply = False, image=ds_arr)
+        img_tensor = img_tensor["image"]
+        
         return img_tensor, label
 
     def plot_split(self, x = "", to_file = ""):

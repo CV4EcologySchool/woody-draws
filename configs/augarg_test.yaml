@@ -8,15 +8,19 @@ img_width: 256
 img_height: 256
 n_channels: 4
 
-batch_size: 16
+batch_size: 10
 num_workers: 1
 num_classes: 3
 num_epochs: 200
+loss: cross_entropy
 
 learning_rate: 0.001
 weight_decay: 0.001
 seed: 32678456782       # random number generator seed (long integer value)
 device: cuda
 
-experiment_name: top_3_species_20220810
+horizontal_flip_p: 0.2
+vertical_flip_p: 0.2
+
+experiment_name: augment_arg_test_20220812
 

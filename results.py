@@ -2,7 +2,7 @@ import yaml
 from train import create_dataloader, load_model
 import torch
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, classification_report
 import seaborn as sns
 import pandas as pd
 import numpy as np
@@ -75,6 +75,7 @@ def make_classification_report(y_true,  y_pred, cfg):
     cr.to_csv("eval/{}/classification_report.csv".format(cfg["experiment_name"]))
 
 def make_confusion_matrix(y_true, y_pred, cfg, **kwargs):
+    dl = create_dataloader(cfg)
     cf_matrix = confusion_matrix(y_true, y_pred)
     plt.clf()
     plt.figure(figsize = (12,7))

@@ -11,12 +11,15 @@ n_channels: 4
 batch_size: 16
 num_workers: 1
 num_classes: 3
-num_epochs: 200
+num_epochs: 100
+loss: cross_entropy
+horizontal_flip_p: 0.5
+vertical_flip_p: 0.5
 
 learning_rate: 0.001
 weight_decay: 0.001
 seed: 32678456782       # random number generator seed (long integer value)
 device: cuda
 
-experiment_name: top_3_species_20220810
+experiment_name: augmentation_test_20220811
 

@@ -3,6 +3,7 @@ import argparse
 import yaml
 import glob
 from tqdm import trange
+from torchvision import models
 
 import torch
 import torch.nn as nn
@@ -12,7 +13,7 @@ from torch.optim import SGD
 # let's import our own classes and functions!
 #from util import init_seed
 from dataset import WDDataSet
-from model import NAIPResNet50
+from model import define_resnet
 import numpy as np
 from torchvision.models.resnet import BasicBlock, Bottleneck, ResNet
 
@@ -38,8 +39,10 @@ def load_model(cfg):
     '''
         Creates a model instance and loads the latest model state weights.
     '''
-    model_instance = NAIPResNet50(Bottleneck, [3, 4, 6, 3], cfg['num_classes'], cfg["n_channels"])         # create an object instance of our CustomResNet18 class
-
+    #model_instance = NAIPResNet50(Bottleneck, [3, 4, 6, 3], cfg['num_classes'], cfg["n_channels"])         # create an object instance of our CustomResNet18 class
+    #model_instance = NAIPResNet50(cfg['num_classes'])         # create an object instance of our CustomResNet18 class
+    model_instance = define_resnet(cfg, "resnet50", pretrained=False)
+    
     # load latest model state
     model_states = glob.glob('model_states/{}/*.pt'.format(cfg["experiment_name"]))
     if len(model_states):

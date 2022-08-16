@@ -5,4 +5,4 @@ do
     esac
 done
 echo "USING CONFIG FILE: $config";
-python train.py --config $config && python results.py --config $config 
+python draw_classifier/train.py --config $config && python draw_classifier/results.py --config $config 

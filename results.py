@@ -76,14 +76,14 @@ def make_classification_report(y_true,  y_pred, cfg):
 
 def make_confusion_matrix(y_true, y_pred, cfg, **kwargs):
     dl = create_dataloader(cfg)
-    cf_matrix = confusion_matrix(y_true, y_pred)
+    cf_matrix = confusion_matrix(y_true, y_pred, labels = dl.dataset.le.classes_)
     plt.clf()
     plt.figure(figsize = (12,7))
     sns.heatmap(cf_matrix, annot=True)
     plt.gca().set_xlabel('Predicted labels')
     plt.gca().set_ylabel('True labels');
-    plt.gca().set_xticklabels(dl.dataset.le.classes_)
-    plt.gca().set_yticklabels(dl.dataset.le.classes_[::-1])
+    #plt.gca().set_xticklabels(dl.dataset.le.classes_)
+    #plt.gca().set_yticklabels(dl.dataset.le.classes_)
     plt.savefig('eval/{}/confusion_matrix.png'.format(cfg["experiment_name"]))
 
 def make_experiment_eval_folder(cfg):

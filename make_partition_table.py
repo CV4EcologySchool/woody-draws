@@ -18,11 +18,11 @@ import yaml
 #### to do
 ### make input/output from config file on command line
 
-cfg = yaml.safe_load(open("configs/data_config.yaml", "r"))
+cfg = yaml.safe_load(open("configs/augarg_test.yaml", "r"))
 image_glob = cfg["image_glob"]
 transectsf = cfg["transects"]
 drawsf = cfg["draw_polygons"]
-
+pred_col = cfg["pred_col"]
 def make_partition_table(drawsf, transectsf, image_glob, pred_col):
     draws = gpd.read_file(drawsf)
     transects = gpd.read_file(transectsf)#[["draw", "dom_overstory", "overstory_other"]]

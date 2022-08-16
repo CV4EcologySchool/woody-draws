@@ -18,12 +18,12 @@ from torchvision.models.resnet import BasicBlock, Bottleneck, ResNet
 
 #cfg = yaml.safe_load(open("configs/data_config.yaml", "r"))
 #split = "train"
-def create_dataloader(cfg, split='train'):
+def create_dataloader(cfg: dict, epoch_number: int = 1, split: str = 'train'):
     '''
         Loads a dataset according to the provided split and wraps it in a
         PyTorch DataLoader object.
     '''
-    dataset_instance = WDDataSet(cfg, split)        # create an object instance of our CTDataset class
+    dataset_instance = WDDataSet(cfg, split, epoch_number)        # create an object instance of our CTDataset class
     dataLoader = DataLoader(
             dataset=dataset_instance,
             batch_size=cfg['batch_size'],
@@ -93,7 +93,7 @@ def setup_optimizer(cfg, model):
 
 
 
-def train(cfg, dataLoader, model, optimizer):
+def train(cfg, dataLoader, model, optimizer, current_epoch):
     '''
         Our actual training function.
     '''
@@ -240,8 +240,7 @@ def main():
         print(f'WARNING: device set to "{device}" but CUDA not available; falling back to CPU...')
         cfg['device'] = 'cpu'
 
-    # initialize data loaders for training and validation set
-    dl_train = create_dataloader(cfg, split='train')
+    # initialize data loaders for validation set
     dl_val = create_dataloader(cfg, split='val')
 
     # initialize model
@@ -255,8 +254,9 @@ def main():
     while current_epoch < numEpochs:
         current_epoch += 1
         print(f'Epoch {current_epoch}/{numEpochs}')
+        dl_train = create_dataloader(cfg, split='train', epoch_number = current_epoch+1)
 
-        loss_train, oa_train = train(cfg, dl_train, model, optim)
+        loss_train, oa_train = train(cfg, dl_train, model, optim, current_epoch+1)
         loss_val, oa_val = validate(cfg, dl_val, model)
 
         # combine stats and save

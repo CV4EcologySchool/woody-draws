@@ -3,6 +3,7 @@ import json
 from torch.utils.data import Dataset
 from torchvision.transforms import Compose, Resize, ToTensor, RandomHorizontalFlip
 from torchvision.transforms import RandomVerticalFlip
+from scipy.special import softmax
 from PIL import Image
 from make_partition_table import make_partition_table
 import yaml
@@ -16,12 +17,11 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 plt.rcParams['figure.figsize'] = [15, 7]
 plt.rcParams['figure.dpi'] = 100
-#c = "configs/pipeline_test.yaml"
+#c = "configs/curriculum_test.yaml"
 #cfg = yaml.safe_load(open(c, "r"))
 
 class WDDataSet(Dataset):
-
-    def __init__(self, cfg, split = "train"):
+    def __init__(self, cfg: dict, split: str = "train", epoch_number: int = 1):
         self.split = split
         if split == "train":
             self.transform = A.Compose([
@@ -47,7 +47,18 @@ class WDDataSet(Dataset):
         except KeyError:
             self.global_table = make_partition_table(self.draw_polygons, self.transects, self.image_glob, self.pred_col)
         
+        
         self.data_table = self.global_table[self.global_table["split"] == self.split]
+        self.ordered_classes = list(self.data_table[self.pred_col].value_counts().index)
+        if cfg["curriculum"] == True and split == "train":
+            self.true_class_probabilities = np.array(self.data_table[self.pred_col].value_counts() / self.data_table.shape[0])
+            self.ordered_classes_sample_probs = softmax(((1/self.true_class_probabilities)/epoch_number) + self.true_class_probabilities)
+            self.data_table["weight"] = np.nan 
+            for i,(c,prob) in enumerate(zip(self.ordered_classes, self.ordered_classes_sample_probs)):
+                self.data_table.loc[(self.data_table[self.pred_col] == c), "weight"] = prob
+                                        
+            self.data_table = self.data_table.sample(n = int(self.data_table.shape[0]), weights = self.data_table["weight"], random_state = 4818)
+
         self.images = self.data_table["file_path"]
         self.labels = self.data_table[self.pred_col]
         self.le = LabelEncoder().fit(self.labels)
@@ -98,8 +109,9 @@ if __name__ == "__main__":
     parser.add_argument("--config")
     args = parser.parse_args()
     cfg = yaml.safe_load(open(args.config, "r"))
-    train = WDDataSet(cfg, split = "train")
-    train.plot_split(x = cfg["pred_col"], to_file = "figs/{}_train_strata_split.png".format(cfg["experiment_name"]))
+    train = WDDataSet(cfg, split = "train", epoch_number = 5)
+    print(train.data_table)
+    #train.plot_split(x = cfg["pred_col"], to_file = "eval/{}/train_strata_split.png".format(cfg["experiment_name"]))
     
 
 

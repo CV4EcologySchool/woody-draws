@@ -39,8 +39,8 @@ def load_model(cfg):
     '''
         Creates a model instance and loads the latest model state weights.
     '''
-    #model_instance = NAIPResNet50(Bottleneck, [3, 4, 6, 3], cfg['num_classes'], cfg["n_channels"])         # create an object instance of our CustomResNet18 class
-    #model_instance = NAIPResNet50(cfg['num_classes'])         # create an object instance of our CustomResNet18 class
+    
+    ### Instatiate model with specified backbone. For now, just keep everything at resnet50
     model_instance = define_resnet(cfg, "resnet50", pretrained=False)
     
     # load latest model state

@@ -12,8 +12,8 @@ from torch.optim import SGD
 
 # let's import our own classes and functions!
 #from util import init_seed
-from dataset import WDDataSet
-from model import define_resnet
+from draw_classifier.dataset import WDDataSet
+from draw_classifier.model import define_resnet
 import numpy as np
 from torchvision.models.resnet import BasicBlock, Bottleneck, ResNet
 

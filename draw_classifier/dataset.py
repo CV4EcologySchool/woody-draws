@@ -5,7 +5,7 @@ from torchvision.transforms import Compose, Resize, ToTensor, RandomHorizontalFl
 from torchvision.transforms import RandomVerticalFlip
 from scipy.special import softmax
 from PIL import Image
-from make_partition_table import make_partition_table
+from draw_classifier.make_partition_table import make_partition_table
 import yaml
 import numpy as np
 from osgeo import gdal

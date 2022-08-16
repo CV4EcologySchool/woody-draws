@@ -1,5 +1,5 @@
 import yaml
-from train import create_dataloader, load_model
+from draw_classifier.train import create_dataloader, load_model
 import torch
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, classification_report
@@ -10,8 +10,8 @@ import os
 
 
 # setup entities
-
-
+c = "configs/actual_resnet50_curriculum_test.yaml"
+cfg = yaml.safe_load(open(c))
 def plot_model_over_epochs(cfg, y_vars = ["loss", "oa"]):
     # load model
     model = load_model(cfg)
@@ -44,6 +44,7 @@ def plot_model_over_epochs(cfg, y_vars = ["loss", "oa"]):
 # iterate over test data
 def make_prediction_table(cfg, predict_proba = True, decode_labels = True):
     model = load_model(cfg)
+
     dl = create_dataloader(cfg, split='test')
     y_pred = []
     y_true = []
@@ -86,6 +87,47 @@ def make_confusion_matrix(y_true, y_pred, cfg, **kwargs):
     #plt.gca().set_yticklabels(dl.dataset.le.classes_)
     plt.savefig('eval/{}/confusion_matrix.png'.format(cfg["experiment_name"]))
 
+def make_auc_roc_curve(df, cfg):
+    stopping_col = np.where(df.columns == "true")[0][0]
+    pred_probs = df.iloc[:,0:stopping_col]    
+    y_pred = df["predicted"]
+    y_true = df["true"]
+    plt.clf()
+    false_positive = dict()
+    true_positive = dict()
+    for c in list(pred_probs.columns):
+        this_class_y_true = np.where(y_true == c, 1, 0)
+        false_positive[c], true_positive[c], threshs = roc_curve(this_class_y_true,
+                                                            pred_probs[c])
+        plt.plot(threshs[threshs <= 1.0], false_positive[c][threshs <= 1.0], lw=2, label='False positives: {}'.format(c))
+        plt.plot(threshs[threshs <= 1.0], true_positive[c][threshs <= 1.0], lw=2, label='True positives: {}'.format(c))
+        
+    plt.xlabel("Threshold")
+    plt.ylabel("True/False Positive Rate")
+    plt.legend(loc="best")
+    plt.title("ROC")
+    plt.savefig("{}/ROC_curve.png".format(cfg["experiment_name"]))
+
+def make_precision_recall_curve(df, cfg):
+    stopping_col = np.where(df.columns == "true")[0][0]
+    pred_probs = df.iloc[:,0:stopping_col]    
+    y_pred = df["predicted"]
+    y_true = df["true"]
+
+    precision = dict()
+    recall = dict()
+    for c in list(pred_probs.columns):
+        this_class_y_true = np.where(y_true == c, 1, 0)
+        precision[c], recall[c], _ = precision_recall_curve(this_class_y_true,
+                                                            pred_probs[c])
+        plt.plot(recall[c], precision[c], lw=2, label='class {}'.format(c))
+        
+    plt.xlabel("recall")
+    plt.ylabel("precision")
+    plt.legend(loc="best")
+    plt.title("precision vs. recall curve")
+    plt.savefig("{}/pr_curve.png".format(cfg["experiment_name"]))
+
 def make_experiment_eval_folder(cfg):
     if not os.path.exists("eval/{}".format(cfg["experiment_name"])):
         os.makedirs("eval/{}".format(cfg["experiment_name"]))
@@ -105,6 +147,8 @@ if __name__ == "__main__":
     
     plot_model_over_epochs(cfg)
     predictions = make_prediction_table(cfg, decode_labels = True, predict_proba = True)
+    make_auc_roc_curve(predictions, cfg)
+    make_precision_recall_curve(predictions, cfg)
     make_confusion_matrix(predictions["true"], predictions["predicted"], cfg)
     make_classification_report(predictions["true"], predictions["predicted"], cfg)
 

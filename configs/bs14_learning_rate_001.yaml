@@ -1,0 +1,27 @@
+draw_polygons: data/vectors/draw_polygons.geojson
+transects: data/vectors/WD_Field_Data_20220803.geojson
+image_glob: data/images/*oid*.tif
+pred_col: dom_overstory
+keep_top: 3
+
+img_width: 256
+img_height: 256
+n_channels: 4
+
+batch_size: 14 
+num_workers: 1
+num_classes: 3
+num_epochs: 200
+loss: cross_entropy
+curriculum: False
+
+learning_rate: 0.001
+weight_decay: 0.001
+seed: 32678456782       # random number generator seed (long integer value)
+device: cuda
+
+horizontal_flip_p: 0.2
+vertical_flip_p: 0.2
+
+experiment_name: bs14_learning_rate_001
+

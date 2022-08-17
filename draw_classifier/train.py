@@ -16,7 +16,7 @@ from draw_classifier.dataset import WDDataSet
 from draw_classifier.model import define_resnet
 import numpy as np
 from torchvision.models.resnet import BasicBlock, Bottleneck, ResNet
-
+torch.cuda.empty_cache()
 #cfg = yaml.safe_load(open("configs/data_config.yaml", "r"))
 #split = "train"
 def create_dataloader(cfg: dict, epoch_number: int = 1, split: str = 'train'):

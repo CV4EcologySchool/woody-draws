@@ -2,7 +2,7 @@ import yaml
 from draw_classifier.train import create_dataloader, load_model
 import torch
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import confusion_matrix, classification_report, roc_curve, precision_recall_curve
 import seaborn as sns
 import pandas as pd
 import numpy as np
@@ -10,8 +10,8 @@ import os
 
 
 # setup entities
-c = "configs/actual_resnet50_curriculum_test.yaml"
-cfg = yaml.safe_load(open(c))
+#c = "configs/actual_resnet50_curriculum_test.yaml"
+#cfg = yaml.safe_load(open(c))
 def plot_model_over_epochs(cfg, y_vars = ["loss", "oa"]):
     # load model
     model = load_model(cfg)
@@ -106,14 +106,14 @@ def make_auc_roc_curve(df, cfg):
     plt.ylabel("True/False Positive Rate")
     plt.legend(loc="best")
     plt.title("ROC")
-    plt.savefig("{}/ROC_curve.png".format(cfg["experiment_name"]))
+    plt.savefig("eval/{}/ROC_curve.png".format(cfg["experiment_name"]))
 
 def make_precision_recall_curve(df, cfg):
     stopping_col = np.where(df.columns == "true")[0][0]
     pred_probs = df.iloc[:,0:stopping_col]    
     y_pred = df["predicted"]
     y_true = df["true"]
-
+    plt.clf()
     precision = dict()
     recall = dict()
     for c in list(pred_probs.columns):
@@ -126,7 +126,7 @@ def make_precision_recall_curve(df, cfg):
     plt.ylabel("precision")
     plt.legend(loc="best")
     plt.title("precision vs. recall curve")
-    plt.savefig("{}/pr_curve.png".format(cfg["experiment_name"]))
+    plt.savefig("eval/{}/pr_curve.png".format(cfg["experiment_name"]))
 
 def make_experiment_eval_folder(cfg):
     if not os.path.exists("eval/{}".format(cfg["experiment_name"])):

@@ -44,7 +44,7 @@ def load_model(cfg, find_best = False):
     model_instance = define_resnet(cfg, "resnet50", pretrained=False)
     
     # load latest model state
-    model_states = glob.glob('model_states/{}/*.pt'.format(cfg["experiment_name"]))
+    model_states = glob.glob('model_states/{}/[0-9]*.pt'.format(cfg["experiment_name"]))
     if len(model_states) > 0 and find_best == False:
         # at least one save state found; get latest
         model_epochs = [int(m.replace('model_states/{}/'.format(cfg["experiment_name"]),'').replace('.pt','')) for m in model_states]
@@ -67,18 +67,19 @@ def load_model(cfg, find_best = False):
         start_epoch = min(model_epochs)
         
         # load state dict and apply weights to model
-        print(f'Resuming from epoch {start_epoch}')
+        print(f'Searching for best model state  from epoch {start_epoch}')
         experiment_name = cfg["experiment_name"]
-        epoch_idx = np.array(len(model_epochs))
+        epoch_idx = np.ones(len(model_epochs))*-1
         for i, epoch in enumerate(model_epochs):
 
-            state = torch.load(open(f'model_states/{experiment_name}/{start_epoch}.pt', 'rb'), map_location='cpu')
-            val_loss = state["val_loss"]
+            state = torch.load(open(f'model_states/{experiment_name}/{epoch}.pt', 'rb'), map_location='cpu')
+            val_loss = state["loss_val"]
+            print(val_loss)
             epoch_idx[i] = val_loss
-        best_epoch = np.where(epoch_idx == epoch_idx.max())[0]
+        best_epoch = np.where(epoch_idx == epoch_idx.min())[0][0]
         state = torch.load(open(f'model_states/{experiment_name}/{best_epoch}.pt', 'rb'), map_location='cpu')
         model_instance.load_state_dict(state['model'])
-        torch.save(model_instance.state_dict(), open(f'model_states/{experiment_name}/best_model.pt', 'rb'))
+        torch.save(model_instance.state_dict(), open(f'model_states/{experiment_name}/best_model_epoch{best_epoch}.pt', 'wb'))
         return model_instance, best_epoch
         
 

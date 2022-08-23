@@ -20,7 +20,7 @@ from tqdm import trange
 from scipy.special import softmax
 import pandas as pd
 import geopandas as gpd
-
+from draw_classifier.train import load_model
 
 class WDPredictionDataset(Dataset):
     def __init__(self, image_glob):
@@ -48,36 +48,10 @@ def create_dataloader(cfg: dict):
     dataLoader = DataLoader(
             dataset=dataset_instance,
             batch_size=cfg['batch_size'],
-            shuffle=False,
+            shuffle=True,
             num_workers=cfg['num_workers']
         )
     return dataLoader
-def load_model(cfg):
-    '''
-        Creates a model instance and loads the latest model state weights.
-    '''
-    
-    ### Instatiate model with specified backbone. For now, just keep everything at resnet50
-    model_instance = define_resnet(cfg, "resnet50", pretrained=False)
-    
-    # load latest model state
-    model_states = glob('model_states/{}/*.pt'.format(cfg["experiment_name"]))
-    if len(model_states):
-        # at least one save state found; get latest
-        model_epochs = [int(m.replace('model_states/{}/'.format(cfg["experiment_name"]),'').replace('.pt','')) for m in model_states]
-        start_epoch = max(model_epochs)
-
-        # load state dict and apply weights to model
-        experiment_name = cfg["experiment_name"]
-        state = torch.load(open(f'model_states/{experiment_name}/{start_epoch}.pt', 'rb'), map_location='cpu')
-        model_instance.load_state_dict(state['model'])
-
-    else:
-        # no save state found; start anew
-        print('Starting new model')
-        start_epoch = 0
-
-    return model_instance
 
 
 def run_predictions(cfg):
@@ -87,8 +61,8 @@ def run_predictions(cfg):
     transects = cfg["transects"]
     image_glob = cfg["image_glob"]
     pred_col = cfg["pred_col"]
-    model = load_model(cfg)
-    model.to(device)
+    model, epoch = load_model(cfg, find_best = True)
+    #model.to(device)
 
     dataset = create_dataloader(cfg)
     all_predictions = []

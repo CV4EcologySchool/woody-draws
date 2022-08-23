@@ -14,7 +14,7 @@ import os
 #cfg = yaml.safe_load(open(c))
 def plot_model_over_epochs(cfg, y_vars = ["loss", "oa"]):
     # load model
-    model = load_model(cfg)
+    model = load_model(cfg, find_best = False)
     train_loss = []
     val_loss = []
     train_oa = []
@@ -43,7 +43,7 @@ def plot_model_over_epochs(cfg, y_vars = ["loss", "oa"]):
 
 # iterate over test data
 def make_prediction_table(cfg, predict_proba = True, decode_labels = True):
-    model = load_model(cfg)
+    model = load_model(cfg, find_best = True)
 
     dl = create_dataloader(cfg, split='test')
     y_pred = []

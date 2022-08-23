@@ -35,7 +35,7 @@ def create_dataloader(cfg: dict, epoch_number: int = 1, split: str = 'train'):
 
 
 
-def load_model(cfg):
+def load_model(cfg, find_best = False):
     '''
         Creates a model instance and loads the latest model state weights.
     '''
@@ -45,7 +45,7 @@ def load_model(cfg):
     
     # load latest model state
     model_states = glob.glob('model_states/{}/*.pt'.format(cfg["experiment_name"]))
-    if len(model_states):
+    if len(model_states) > 0 and find_best == False:
         # at least one save state found; get latest
         model_epochs = [int(m.replace('model_states/{}/'.format(cfg["experiment_name"]),'').replace('.pt','')) for m in model_states]
         start_epoch = max(model_epochs)
@@ -55,13 +55,32 @@ def load_model(cfg):
         experiment_name = cfg["experiment_name"]
         state = torch.load(open(f'model_states/{experiment_name}/{start_epoch}.pt', 'rb'), map_location='cpu')
         model_instance.load_state_dict(state['model'])
+        return model_instance, start_epoch
 
-    else:
+    elif len(model_states) == 0 and find_best == False:
         # no save state found; start anew
         print('Starting new model')
         start_epoch = 0
+        return model_instance, start_epoch
+    elif len(model_states) > 0 and find_best == True:
+        model_epochs = [int(m.replace('model_states/{}/'.format(cfg["experiment_name"]),'').replace('.pt','')) for m in model_states]
+        start_epoch = min(model_epochs)
+        
+        # load state dict and apply weights to model
+        print(f'Resuming from epoch {start_epoch}')
+        experiment_name = cfg["experiment_name"]
+        epoch_idx = np.array(len(model_epochs))
+        for i, epoch in enumerate(model_epochs):
 
-    return model_instance, start_epoch
+            state = torch.load(open(f'model_states/{experiment_name}/{start_epoch}.pt', 'rb'), map_location='cpu')
+            val_loss = state["val_loss"]
+            epoch_idx[i] = val_loss
+        best_epoch = np.where(epoch_idx == epoch_idx.max())[0]
+        state = torch.load(open(f'model_states/{experiment_name}/{best_epoch}.pt', 'rb'), map_location='cpu')
+        model_instance.load_state_dict(state['model'])
+        torch.save(model_instance.state_dict(), open(f'model_states/{experiment_name}/best_model.pt', 'rb'))
+        return model_instance, best_epoch
+        
 
 
 

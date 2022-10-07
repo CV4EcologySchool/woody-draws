@@ -17,7 +17,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 plt.rcParams['figure.figsize'] = [15, 7]
 plt.rcParams['figure.dpi'] = 100
-#c = "configs/curriculum_test.yaml"
+#c = "configs/fully_conv_test.yaml"
 #cfg = yaml.safe_load(open(c, "r"))
 
 class WDDataSet(Dataset):
@@ -64,10 +64,15 @@ class WDDataSet(Dataset):
         self.le = LabelEncoder().fit(self.labels)
         self.labels = self.le.transform(self.labels)
         self.data = [(i,l) for i, l in zip(self.images, self.labels)]
-
-        self.img_width = cfg["img_width"]
-        self.img_height = cfg["img_height"]
-        self.n_channels = cfg["n_channels"]
+        
+        try:
+            self.img_width = cfg["img_width"]
+            self.img_height = cfg["img_height"]
+            self.n_channels = cfg["n_channels"]
+            self.fully_conv = False
+        except KeyError:
+            self.n_channels = cfg["n_channels"]
+            self.fully_conv = True
 
     def __len__(self):
         return self.data_table.shape[0]
@@ -76,7 +81,7 @@ class WDDataSet(Dataset):
         image_name, label = self.data[idx]
         ds = gdal.Open(image_name)
         ds_arr = ds.ReadAsArray()
-        ds_arr = ds_arr.astype(np.uint8).reshape(self.img_width, self.img_height, self.n_channels)
+        ds_arr = ds_arr.astype(np.uint8).reshape(ds.RasterXSize, ds.RasterYSize, ds.RasterCount)
         img_tensor = self.transform(force_apply = False, image=ds_arr)
         img_tensor = img_tensor["image"]
         
@@ -110,8 +115,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     cfg = yaml.safe_load(open(args.config, "r"))
     train = WDDataSet(cfg, split = "train", epoch_number = 5)
-    print(train.data_table)
-    #train.plot_split(x = cfg["pred_col"], to_file = "eval/{}/train_strata_split.png".format(cfg["experiment_name"]))
+    #print(train.data_table)
+    train.plot_split(x = cfg["pred_col"], to_file = "eval/{}/train_strata_split.png".format(cfg["experiment_name"]))
     
 
 
